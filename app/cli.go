@@ -1,7 +1,19 @@
 package app
 
-import "github.com/meongbego/wopt/app/clis"
+import (
+	"fmt"
+	"os"
+
+	"github.com/meongbego/wopt/app/clis"
+)
 
 func Init() {
-	clis.Testing()
+	argsWithProg := os.Args[1]
+	if argsWithProg == "test" {
+		clis.Test()
+		os.Exit(1)
+	} else {
+		fmt.Println("No Commands")
+		os.Exit(1)
+	}
 }

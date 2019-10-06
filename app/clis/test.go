@@ -6,7 +6,7 @@ import (
 	"github.com/docopt/docopt-go"
 )
 
-func Testing() {
+func Test() {
 	usage := `Example of program with many options using docopt.
 Usage:
   options [-hvqrf NAME] [--exclude=PATTERNS]
