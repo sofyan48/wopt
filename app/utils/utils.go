@@ -1,26 +1,11 @@
 package utils
 
 import (
+	"errors"
 	"reflect"
 	"regexp"
 	"strings"
 )
-
-func Getattr(obj interface{}, name string) interface{} {
-	objValue := reflect.ValueOf(obj)
-
-	if objValue.Kind() == reflect.Ptr {
-		objValue = objValue.Elem()
-	}
-
-	prop := objValue.FieldByName(name)
-
-	if prop.Kind() == reflect.Invalid {
-		return nil
-	}
-
-	return prop.Interface()
-}
 
 var numberSequence = regexp.MustCompile(`([a-zA-Z])(\d+)([a-zA-Z]?)`)
 var numberReplacement = []byte(`$1 $2 $3`)
@@ -30,6 +15,12 @@ func addWordBoundariesToNumbers(s string) string {
 	b = numberSequence.ReplaceAll(b, numberReplacement)
 	return string(b)
 }
+
+var (
+	ErrParamsNotAdapted = errors.New("The number of params is not adapted.")
+)
+
+type Funcs map[string]reflect.Value
 
 // Converts a string to CamelCase
 func toCamelInitCase(s string, initCase bool) string {
@@ -73,4 +64,37 @@ func ToLowerCamel(s string) string {
 		s = strings.ToLower(string(r)) + s[1:]
 	}
 	return toCamelInitCase(s, false)
+}
+
+func NewFuncs(size int) Funcs {
+	return make(Funcs, size)
+}
+
+func (f Funcs) Bind(name string, fn interface{}) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = errors.New(name + " is not callable.")
+		}
+	}()
+	v := reflect.ValueOf(fn)
+	v.Type().NumIn()
+	f[name] = v
+	return
+}
+
+func (f Funcs) Call(name string, params ...interface{}) (result []reflect.Value, err error) {
+	if _, ok := f[name]; !ok {
+		err = errors.New(name + " does not exist.")
+		return
+	}
+	if len(params) != f[name].Type().NumIn() {
+		err = ErrParamsNotAdapted
+		return
+	}
+	in := make([]reflect.Value, len(params))
+	for k, param := range params {
+		in[k] = reflect.ValueOf(param)
+	}
+	result = f[name].Call(in)
+	return
 }
